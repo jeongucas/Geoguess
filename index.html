@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Field Dispatch — A Geography Game</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="app">
+      <!-- SETUP: only shown if the embedded key fails to load -->
+      <div class="screen" id="screen-setup">
+        <div class="card">
+          <span class="eyebrow">Field Dispatch · Connection Issue</span>
+          <h1 class="headline">Couldn't reach the map service</h1>
+          <p class="sub">
+            This game plots real Street View imagery on real maps via a built-in
+            API key. That request failed to load.
+          </p>
+          <div class="error-msg" id="setupError" style="display: none"></div>
+          <p class="hint">
+            This usually means the embedded key is invalid, over quota, or
+            missing one of "Maps JavaScript API", "Street View Static API", or
+            "Geocoding API" in Google Cloud Console. Try reloading the page, or
+            check the key's restrictions/quota.
+          </p>
+          <button class="btn-primary" id="retryBtn" style="margin-top: 10px">
+            Retry
+          </button>
+        </div>
+      </div>
+
+      <!-- LOGIN -->
+      <div class="screen" id="screen-login">
+        <div class="card">
+          <span class="eyebrow">Field Dispatch · Sign In</span>
+          <h1 class="headline">Who's heading out today?</h1>
+          <p class="sub">
+            Your name gets stamped on your dispatch log and the leaderboard.
+          </p>
+          <div class="field">
+            <label class="field-label">Agent Name</label>
+            <input
+              type="text"
+              id="usernameInput"
+              placeholder="e.g. R. Fossey"
+              maxlength="24"
+            />
+          </div>
+          <button class="btn-primary" id="loginBtn">Enter the Field</button>
+        </div>
+      </div>
+
+      <!-- MENU -->
+      <div class="screen" id="screen-menu">
+        <div class="card">
+          <span class="eyebrow" id="menuGreeting">Field Dispatch</span>
+          <h1 class="headline">Choose your terrain</h1>
+          <p class="sub">
+            Five rounds. Each drops you somewhere on Earth via Street View — pin
+            your guess on the map as close to the true spot as you can.
+          </p>
+          <div class="diff-grid">
+            <button class="diff-card" data-diff="easy">
+              <div class="lvl">Level 01</div>
+              <div class="lvl-name">Easy</div>
+              <div class="lvl-desc">
+                Iconic landmarks and cities. Road labels visible, free movement,
+                forgiving scoring. No round time limit.
+              </div>
+            </button>
+            <button class="diff-card" data-diff="medium">
+              <div class="lvl">Level 02</div>
+              <div class="lvl-name">Medium</div>
+              <div class="lvl-desc">
+                Recognizable but less famous places. No road labels, limited
+                movement, 60-second round time limit.
+              </div>
+            </button>
+            <button class="diff-card" data-diff="hard">
+              <div class="lvl">Level 03</div>
+              <div class="lvl-name">Hard</div>
+              <div class="lvl-desc">
+                Remote and rural drops worldwide. No movement, no labels,
+                unforgiving scoring, 45-second round time limit.
+              </div>
+            </button>
+          </div>
+          <div class="row-buttons">
+            <button class="btn-ghost" id="viewLeaderboardBtn">
+              View Leaderboard
+            </button>
+            <button class="btn-ghost" id="logoutBtn">Switch Agent</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- GAME -->
+      <div class="screen" id="screen-game">
+        <div class="game-header">
+          <div class="stat">
+            <div class="n" id="hudRound">1 / 5</div>
+            <div class="l">Round</div>
+          </div>
+          <div class="badge" id="hudDiff">EASY</div>
+          <div class="stat">
+            <div class="n" id="hudTime">∞</div>
+            <div class="l">Time left</div>
+          </div>
+          <div class="stat">
+            <div class="n" id="hudScore">0</div>
+            <div class="l">Total Score</div>
+          </div>
+        </div>
+        <div class="game-body">
+          <div id="pano"></div>
+          <div class="guess-panel" id="guessPanel">
+            <div class="guess-panel-label">
+              Click the map to drop or move your guess
+            </div>
+            <div id="guessMap"></div>
+          </div>
+          <div class="submit-guess-wrap">
+            <button class="btn-primary" id="submitGuessBtn" disabled>
+              Submit Guess
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ROUND RESULT -->
+      <div class="screen" id="screen-round-result">
+        <div class="card" style="padding: 0; overflow: hidden">
+          <div class="result-grid">
+            <div id="resultMap"></div>
+            <div class="result-side">
+              <div class="seal">
+                <div class="score-num" id="rrScore">0</div>
+                <div class="score-lbl">Points</div>
+              </div>
+              <div class="rating" id="rrRating">—</div>
+              <div class="distance-line" id="rrDistance">— km off</div>
+              <div class="locname" id="rrLocation">Locating…</div>
+              <button class="btn-primary" id="nextRoundBtn">Next Round</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FINAL -->
+      <div class="screen" id="screen-final">
+        <div class="card">
+          <span class="eyebrow">Dispatch Complete</span>
+          <div class="compass">
+            <svg viewBox="0 0 100 100">
+              <circle
+                cx="50"
+                cy="50"
+                r="46"
+                fill="none"
+                stroke="#14D6C0"
+                stroke-width="2"
+              />
+              <polygon points="50,10 58,50 50,90 42,50" fill="#FF6B6B" />
+              <polygon points="10,50 50,42 90,50 50,58" fill="#9B6BFF" />
+            </svg>
+          </div>
+          <div style="text-align: center">
+            <div class="seal final-seal">
+              <div class="score-num" id="finalScore">0</div>
+              <div class="score-lbl">/ 25000</div>
+            </div>
+            <h2 id="finalRating" style="margin-bottom: 4px">—</h2>
+            <p class="sub" style="margin: 0 auto 10px" id="finalSub">
+              Nicely scouted.
+            </p>
+          </div>
+          <table class="breakdown">
+            <thead>
+              <tr>
+                <th>Round</th>
+                <th>Location</th>
+                <th>Distance</th>
+                <th>Score</th>
+              </tr>
+            </thead>
+            <tbody id="breakdownBody"></tbody>
+          </table>
+          <div class="row-buttons">
+            <button class="btn-primary" id="playAgainBtn">New Dispatch</button>
+            <button class="btn-ghost" id="finalLeaderboardBtn">
+              View Leaderboard
+            </button>
+            <button class="btn-ghost" id="finalMenuBtn">Back to Menu</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- LEADERBOARD -->
+      <div class="screen" id="screen-leaderboard">
+        <div class="card">
+          <span class="eyebrow">Field Dispatch · Standings</span>
+          <h1 class="headline">Leaderboard</h1>
+          <p class="sub" id="lbScopeNote">
+            Shared across everyone who plays this dispatch. Filter by terrain.
+          </p>
+          <div class="lb-tabs">
+            <button class="lb-tab active" data-diff="all">All</button>
+            <button class="lb-tab" data-diff="easy">Easy</button>
+            <button class="lb-tab" data-diff="medium">Medium</button>
+            <button class="lb-tab" data-diff="hard">Hard</button>
+          </div>
+          <div id="lbList"></div>
+          <div class="row-buttons" style="margin-top: 20px">
+            <button class="btn-ghost" id="lbBackBtn">Back</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
