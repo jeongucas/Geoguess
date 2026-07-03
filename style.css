@@ -265,6 +265,12 @@ button {
 .diff-card[data-diff="hard"]:hover {
   border-color: var(--coral);
 }
+.diff-card[data-diff="impossible"] {
+  border-top-color: var(--grape);
+}
+.diff-card[data-diff="impossible"]:hover {
+  border-color: var(--grape-dark);
+}
 .diff-card .lvl {
   font-family: "JetBrains Mono", monospace;
   font-size: 11px;
@@ -340,6 +346,10 @@ button {
 .badge.diff-hard {
   border-color: var(--coral);
   color: var(--coral);
+}
+.badge.diff-impossible {
+  border-color: var(--grape);
+  color: var(--grape);
 }
 
 /* --- Game body --- */
